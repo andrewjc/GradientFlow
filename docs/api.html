@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Reference - Gradient Hydrodynamics</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #7c3aed;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --bg-light: #1e293b;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--primary);
+        }
+
+        /* Layout */
+        .container {
+            display: flex;
+            margin-top: 60px;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            background: var(--bg-light);
+            border-right: 1px solid var(--border);
+            padding: 2rem;
+            overflow-y: auto;
+        }
+
+        .sidebar h3 {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+            margin-top: 2rem;
+        }
+
+        .sidebar h3:first-child {
+            margin-top: 0;
+        }
+
+        .sidebar ul {
+            list-style: none;
+        }
+
+        .sidebar li {
+            margin-bottom: 0.5rem;
+        }
+
+        .sidebar a {
+            color: var(--text);
+            text-decoration: none;
+            display: block;
+            padding: 0.25rem 0;
+            transition: color 0.2s;
+        }
+
+        .sidebar a:hover {
+            color: var(--primary);
+        }
+
+        /* Main Content */
+        .main {
+            margin-left: 280px;
+            padding: 3rem;
+            max-width: 900px;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            margin-bottom: 3rem;
+        }
+
+        h2 {
+            font-size: 1.75rem;
+            margin-top: 3rem;
+            margin-bottom: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border);
+        }
+
+        h3 {
+            font-size: 1.25rem;
+            margin-top: 2rem;
+            margin-bottom: 0.75rem;
+            color: var(--primary);
+        }
+
+        p {
+            margin-bottom: 1rem;
+        }
+
+        /* Code */
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+            background: var(--bg-light);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* API Blocks */
+        .api-block {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin: 1.5rem 0;
+            overflow: hidden;
+        }
+
+        .api-header {
+            background: var(--bg);
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .api-type {
+            padding: 0.25rem 0.75rem;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .api-type.class { background: var(--secondary); color: white; }
+        .api-type.method { background: var(--primary); color: white; }
+        .api-type.function { background: var(--success); color: white; }
+        .api-type.property { background: var(--warning); color: black; }
+
+        .api-name {
+            font-family: 'Fira Code', monospace;
+            font-weight: 600;
+        }
+
+        .api-body {
+            padding: 1.5rem;
+        }
+
+        .api-body p {
+            margin-bottom: 1rem;
+        }
+
+        .param-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .param-table th {
+            text-align: left;
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .param-table td {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .param-table .param-name {
+            font-family: 'Fira Code', monospace;
+            color: var(--primary);
+        }
+
+        .param-table .param-type {
+            font-family: 'Fira Code', monospace;
+            color: var(--text-muted);
+            font-size: 0.9em;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .sidebar {
+                display: none;
+            }
+
+            .main {
+                margin-left: 0;
+                padding: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="index.html" class="logo">Gradient Flow</a>
+        <div class="nav-links">
+            <a href="index.html#methodology">Methodology</a>
+            <a href="index.html#quickstart">Quick Start</a>
+            <a href="index.html#examples">Examples</a>
+            <a href="api.html" class="active">API Docs</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <aside class="sidebar">
+            <h3>Core</h3>
+            <ul>
+                <li><a href="#FlowAnalyzer">FlowAnalyzer</a></li>
+                <li><a href="#gradient_scale">gradient_scale</a></li>
+                <li><a href="#FlowMetrics">FlowMetrics</a></li>
+                <li><a href="#LayerHealth">LayerHealth</a></li>
+                <li><a href="#HookManager">HookManager</a></li>
+            </ul>
+
+            <h3>Analyzers</h3>
+            <ul>
+                <li><a href="#StandardAnalyzer">StandardAnalyzer</a></li>
+                <li><a href="#TemporalAnalyzer">TemporalAnalyzer</a></li>
+                <li><a href="#AttentionAnalyzer">AttentionAnalyzer</a></li>
+                <li><a href="#ComparativeAnalyzer">ComparativeAnalyzer</a></li>
+            </ul>
+
+            <h3>Visualizers</h3>
+            <ul>
+                <li><a href="#FlowReport">FlowReport</a></li>
+                <li><a href="#ConsoleReporter">ConsoleReporter</a></li>
+                <li><a href="#HTMLReportGenerator">HTMLReportGenerator</a></li>
+            </ul>
+        </aside>
+
+        <main class="main">
+            <h1>API Reference</h1>
+            <p class="page-subtitle">Complete documentation for the Gradient Hydrodynamics Toolkit</p>
+
+            <!-- Core Section -->
+            <h2 id="core">Core Components</h2>
+
+            <div class="api-block" id="FlowAnalyzer">
+                <div class="api-header">
+                    <span class="api-type class">class</span>
+                    <span class="api-name">FlowAnalyzer(model, model_name="Model")</span>
+                </div>
+                <div class="api-body">
+                    <p>The main gradient flow analysis engine. Hooks into your model and collects gradient statistics during backpropagation.</p>
+
+                    <h4>Parameters</h4>
+                    <table class="param-table">
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td class="param-name">model</td>
+                            <td class="param-type">nn.Module</td>
+                            <td>The PyTorch model to analyze</td>
+                        </tr>
+                        <tr>
+                            <td class="param-name">model_name</td>
+                            <td class="param-type">str</td>
+                            <td>Name for the model in reports (default: "Model")</td>
+                        </tr>
+                    </table>
+
+                    <h4>Methods</h4>
+
+                    <h5><code>analyze(sample_input, sample_target, loss_fn, num_samples=1)</code></h5>
+                    <p>Run gradient flow analysis with standard forward/backward pass.</p>
+                    <pre><code>report = analyzer.analyze(
+    sample_input=x,
+    sample_target=y,
+    loss_fn=nn.CrossEntropyLoss(),
+    num_samples=5  # Average over 5 passes
+)</code></pre>
+
+                    <h5><code>analyze_custom(sample_input, sample_target, loss_fn, forward_fn)</code></h5>
+                    <p>Run analysis with a custom forward function (useful for complex architectures).</p>
+
+                    <h5><code>cleanup()</code></h5>
+                    <p>Remove all hooks and clean up resources. Call when done analyzing.</p>
+                </div>
+            </div>
+
+            <div class="api-block" id="gradient_scale">
+                <div class="api-header">
+                    <span class="api-type function">function</span>
+                    <span class="api-name">gradient_scale(x, scale)</span>
+                </div>
+                <div class="api-body">
+                    <p>Scale gradients during backpropagation without affecting the forward pass. This is the primary tool for fixing exploding gradients.</p>
+
+                    <table class="param-table">
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td class="param-name">x</td>
+                            <td class="param-type">Tensor</td>
+                            <td>Input tensor</td>
+                        </tr>
+                        <tr>
+                            <td class="param-name">scale</td>
+                            <td class="param-type">float</td>
+                            <td>Scale factor for gradients (0.01 = reduce by 100x)</td>
+                        </tr>
+                    </table>
+
+                    <pre><code># In your model's forward pass
+def forward(self, x):
+    # Forward: x passes through unchanged
+    # Backward: gradients are multiplied by 0.01
+    x = gradient_scale(x, 0.01)
+    return self.layer(x)</code></pre>
+                </div>
+            </div>
+
+            <div class="api-block" id="FlowMetrics">
+                <div class="api-header">
+                    <span class="api-type class">class</span>
+                    <span class="api-name">FlowMetrics</span>
+                </div>
+                <div class="api-body">
+                    <p>Dataclass containing gradient flow metrics for a single layer.</p>
+
+                    <table class="param-table">
+                        <tr>
+                            <th>Attribute</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td class="param-name">name</td>
+                            <td class="param-type">str</td>
+                            <td>Layer name</td>
+                        </tr>
+                        <tr>
+                            <td class="param-name">mean_pressure</td>
+                            <td class="param-type">float</td>
+                            <td>Average gradient magnitude</td>
+                        </tr>
+                        <tr>
+                            <td class="param-name">max_pressure</td>
+                            <td class="param-type">float</td>
+                            <td>Maximum gradient magnitude</td>
+                        </tr>
+                        <tr>
+                            <td class="param-name">turbulence</td>
+                            <td class="param-type">float</td>
+                            <td>Gradient variance (stability measure)</td>
+                        </tr>
+                        <tr>
+                            <td class="param-name">velocity</td>
+                            <td class="param-type">float</td>
+                            <td>Rate of change over samples</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <div class="api-block" id="LayerHealth">
+                <div class="api-header">
+                    <span class="api-type class">class</span>
+                    <span class="api-name">LayerHealth</span>
+                </div>
+                <div class="api-body">
+                    <p>Health assessment for a single layer.</p>
+
+                    <table class="param-table">
+                        <tr>
+                            <th>Attribute</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                        <tr>
+                            <td class="param-name">score</td>
+                            <td class="param-type">float</td>
+                            <td>Health score 0-100 (higher is better)</td>
+                        </tr>
+                        <tr>
+                            <td class="param-name">status</td>
+                            <td class="param-type">HealthStatus</td>
+                            <td>HEALTHY, WARNING, or CRITICAL</td>
+                        </tr>
+                        <tr>
+                            <td class="param-name">issues</td>
+                            <td class="param-type">List[str]</td>
+                            <td>Detected issues for this layer</td>
+                        </tr>
+                        <tr>
+                            <td class="param-name">recommendations</td>
+                            <td class="param-type">List[str]</td>
+                            <td>Suggested fixes</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Analyzers Section -->
+            <h2 id="analyzers">Specialized Analyzers</h2>
+
+            <div class="api-block" id="StandardAnalyzer">
+                <div class="api-header">
+                    <span class="api-type class">class</span>
+                    <span class="api-name">StandardAnalyzer</span>
+                </div>
+                <div class="api-body">
+                    <p>Analyzer for feedforward networks (MLPs, CNNs). Adds depth analysis and bottleneck detection.</p>
+
+                    <pre><code>analyzer = StandardAnalyzer(
+    track_activations=True,
+    depth_analysis=True,
+    bottleneck_threshold=0.25  # Flag compression < 25%
+)
+report = analyzer.analyze(model, x, y, loss_fn)</code></pre>
+
+                    <h5>Extra Methods</h5>
+                    <ul>
+                        <li><code>get_layer_type_stats()</code> - Statistics grouped by layer type</li>
+                        <li><code>get_depth_profile()</code> - Pressure profile by network depth</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="api-block" id="TemporalAnalyzer">
+                <div class="api-header">
+                    <span class="api-type class">class</span>
+                    <span class="api-name">TemporalAnalyzer</span>
+                </div>
+                <div class="api-body">
+                    <p>Analyzer for recurrent networks (RNN, LSTM, GRU). Tracks gradient flow through time.</p>
+
+                    <pre><code>analyzer = TemporalAnalyzer(
+    sequence_length=100,
+    track_gates=True,  # LSTM/GRU gates
+    memory_threshold=0.01
+)
+report = analyzer.analyze(rnn_model, sequences, targets, loss_fn)</code></pre>
+
+                    <h5>Extra Methods</h5>
+                    <ul>
+                        <li><code>get_temporal_metrics()</code> - Temporal decay rates per layer</li>
+                        <li><code>get_timestep_profile(layer_name)</code> - Pressure at each timestep</li>
+                        <li><code>get_effective_memory()</code> - Number of timesteps with meaningful gradients</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="api-block" id="AttentionAnalyzer">
+                <div class="api-header">
+                    <span class="api-type class">class</span>
+                    <span class="api-name">AttentionAnalyzer</span>
+                </div>
+                <div class="api-body">
+                    <p>Analyzer for transformer architectures. Tracks Q/K/V gradients and residual health.</p>
+
+                    <pre><code>analyzer = AttentionAnalyzer(
+    num_heads=8,
+    track_heads=True,
+    residual_analysis=True
+)
+report = analyzer.analyze(transformer, tokens, labels, loss_fn)</code></pre>
+
+                    <h5>Extra Methods</h5>
+                    <ul>
+                        <li><code>get_transformer_metrics()</code> - Overall transformer health</li>
+                        <li><code>get_layer_metrics(layer_idx)</code> - Metrics for specific attention layer</li>
+                        <li><code>get_attention_profile()</code> - Q/K/V pressures across layers</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="api-block" id="ComparativeAnalyzer">
+                <div class="api-header">
+                    <span class="api-type class">class</span>
+                    <span class="api-name">ComparativeAnalyzer</span>
+                </div>
+                <div class="api-body">
+                    <p>Compare gradient flow between models or checkpoints. Track training evolution.</p>
+
+                    <pre><code>comparator = ComparativeAnalyzer()
+
+# Compare two checkpoints
+comparison = comparator.compare_checkpoints(
+    model_factory=lambda: MyModel(),
+    checkpoint_a="epoch_10.pt",
+    checkpoint_b="epoch_50.pt",
+    sample_input=x,
+    sample_target=y,
+    loss_fn=loss_fn
+)
+
+print(f"Improved layers: {len(comparison.improved_layers)}")
+print(f"Degraded layers: {len(comparison.degraded_layers)}")</code></pre>
+                </div>
+            </div>
+
+            <!-- Visualizers Section -->
+            <h2 id="visualizers">Visualization</h2>
+
+            <div class="api-block" id="FlowReport">
+                <div class="api-header">
+                    <span class="api-type class">class</span>
+                    <span class="api-name">FlowReport</span>
+                </div>
+                <div class="api-body">
+                    <p>Central report class containing all analysis results.</p>
+
+                    <h5>Display Methods</h5>
+                    <pre><code>report.print_summary()         # Quick overview
+report.print_layers(n=20)      # Layer-by-layer details
+report.print_issues()          # Detected problems
+report.print_recommendations() # Suggested fixes
+report.print_full()            # Everything</code></pre>
+
+                    <h5>Export Methods</h5>
+                    <pre><code>report.save_html("report.html") # Interactive HTML
+report.save_json("report.json") # Machine-readable
+report.save_text("report.txt")  # Plain text</code></pre>
+
+                    <h5>Query Methods</h5>
+                    <pre><code>worst = report.get_worst_layers(10)
+issues = report.get_issues_by_severity("CRITICAL")
+metrics = report.get_layer_metrics("fc1")</code></pre>
+                </div>
+            </div>
+
+        </main>
+    </div>
+</body>
+</html>

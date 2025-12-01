@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gradient Hydrodynamics - Neural Network Debugging Through Fluid Dynamics</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #7c3aed;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg: #0f172a;
+            --bg-light: #1e293b;
+            --text: #e2e8f0;
+            --text-muted: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            z-index: 1000;
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+
+        .nav-links a:hover {
+            color: var(--primary);
+        }
+
+        /* Hero Section */
+        .hero {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 6rem 2rem 4rem;
+            background: linear-gradient(135deg, var(--bg) 0%, var(--bg-light) 50%, var(--bg) 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 50%, rgba(37, 99, 235, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 50%, rgba(124, 58, 237, 0.1) 0%, transparent 50%);
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero .subtitle {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+
+        .hero .tagline {
+            font-size: 1.1rem;
+            color: var(--text);
+            margin-bottom: 3rem;
+            max-width: 700px;
+        }
+
+        .cta-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Sections */
+        section {
+            padding: 6rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        section h2 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        section .section-subtitle {
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 4rem;
+            font-size: 1.1rem;
+        }
+
+        /* Metaphor Cards */
+        .metaphor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .metaphor-card {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 2rem;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .metaphor-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+        }
+
+        .metaphor-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .metaphor-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary);
+        }
+
+        .metaphor-card .technical {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Code Block */
+        .code-section {
+            background: var(--bg-light);
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 2rem 0;
+        }
+
+        .code-header {
+            background: var(--bg);
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-header span {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        pre {
+            padding: 1.5rem;
+            overflow-x: auto;
+            font-family: 'Fira Code', 'Consolas', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+
+        code {
+            font-family: 'Fira Code', 'Consolas', monospace;
+        }
+
+        .keyword { color: #c678dd; }
+        .function { color: #61afef; }
+        .string { color: #98c379; }
+        .comment { color: #5c6370; }
+        .number { color: #d19a66; }
+
+        /* Diagnosis Flow */
+        .diagnosis-flow {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .diagnosis-step {
+            display: flex;
+            gap: 1.5rem;
+            align-items: flex-start;
+        }
+
+        .step-number {
+            width: 48px;
+            height: 48px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.25rem;
+            flex-shrink: 0;
+        }
+
+        .step-content h3 {
+            margin-bottom: 0.5rem;
+        }
+
+        .step-content p {
+            color: var(--text-muted);
+        }
+
+        /* Health Status */
+        .health-demo {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+
+        .health-item {
+            background: var(--bg-light);
+            border-radius: 8px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .health-score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .health-score.good { color: var(--success); }
+        .health-score.warning { color: var(--warning); }
+        .health-score.critical { color: var(--danger); }
+
+        .health-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--bg-light);
+            border-top: 1px solid var(--border);
+            padding: 4rem 2rem;
+            text-align: center;
+        }
+
+        footer p {
+            color: var(--text-muted);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+
+            .hero .subtitle {
+                font-size: 1.25rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .health-demo {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="logo">Gradient Flow</div>
+        <div class="nav-links">
+            <a href="#methodology">Methodology</a>
+            <a href="#quickstart">Quick Start</a>
+            <a href="#examples">Examples</a>
+            <a href="api.html">API Docs</a>
+            <a href="https://github.com/gradient-flow">GitHub</a>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="hero-content">
+            <h1>Gradient Hydrodynamics</h1>
+            <p class="subtitle">Neural Network Debugging Through Fluid Dynamics</p>
+            <p class="tagline">
+                A revolutionary approach to understanding gradient flow by treating neural networks
+                as fluid systems. Diagnose vanishing gradients, exploding activations, and training
+                instabilities with intuitive hydraulic metaphors.
+            </p>
+            <div class="cta-buttons">
+                <a href="#quickstart" class="btn btn-primary">Get Started</a>
+                <a href="#methodology" class="btn btn-secondary">Learn the Theory</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="methodology">
+        <h2>The Breakthrough</h2>
+        <p class="section-subtitle">
+            Understanding neural networks as hydraulic systems makes debugging intuitive
+        </p>
+
+        <div class="metaphor-grid">
+            <div class="metaphor-card">
+                <div class="metaphor-icon">💧</div>
+                <h3>Pressure</h3>
+                <p class="technical">Gradient Magnitude</p>
+                <p>Like water pressure in pipes, gradient "pressure" measures how much force is pushing through each layer. Too low means no learning; too high means instability.</p>
+            </div>
+
+            <div class="metaphor-card">
+                <div class="metaphor-icon">🌊</div>
+                <h3>Turbulence</h3>
+                <p class="technical">Gradient Variance</p>
+                <p>Unstable, chaotic flow indicates training problems. High turbulence means gradients are fluctuating wildly, making optimization difficult.</p>
+            </div>
+
+            <div class="metaphor-card">
+                <div class="metaphor-icon">⚡</div>
+                <h3>Velocity</h3>
+                <p class="technical">Gradient Change Rate</p>
+                <p>How quickly the flow pattern changes over time. High velocity can indicate the network is still adapting; low velocity might mean stagnation.</p>
+            </div>
+
+            <div class="metaphor-card">
+                <div class="metaphor-icon">🚫</div>
+                <h3>Blockage</h3>
+                <p class="technical">Vanishing Gradients</p>
+                <p>A clogged pipe where gradients can't flow through. Common in deep networks and RNNs. The layer upstream of the blockage can't learn.</p>
+            </div>
+
+            <div class="metaphor-card">
+                <div class="metaphor-icon">💥</div>
+                <h3>Burst</h3>
+                <p class="technical">Exploding Gradients</p>
+                <p>Over-pressurized pipes about to fail. Gradients grow exponentially, causing NaN values and training collapse. Often occurs in compression layers.</p>
+            </div>
+
+            <div class="metaphor-card">
+                <div class="metaphor-icon">🔧</div>
+                <h3>Valve</h3>
+                <p class="technical">Gradient Scaling</p>
+                <p>Control mechanisms that regulate flow. The toolkit provides gradient_scale() to act as pressure relief valves at critical points.</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="quickstart">
+        <h2>Quick Start</h2>
+        <p class="section-subtitle">Analyze your model's gradient health in 5 lines of code</p>
+
+        <div class="code-section">
+            <div class="code-header">
+                <span>Python</span>
+            </div>
+            <pre><code><span class="keyword">from</span> gradient_flow <span class="keyword">import</span> FlowAnalyzer
+
+<span class="comment"># Create analyzer</span>
+analyzer = FlowAnalyzer(model, <span class="string">"MyModel"</span>)
+
+<span class="comment"># Analyze gradient flow</span>
+report = analyzer.analyze(sample_input, sample_target, loss_fn)
+
+<span class="comment"># View results</span>
+report.print_summary()      <span class="comment"># Console output</span>
+report.save_html(<span class="string">"report.html"</span>)  <span class="comment"># Interactive report</span></code></pre>
+        </div>
+
+        <div class="health-demo">
+            <div class="health-item">
+                <div class="health-score good">92%</div>
+                <div class="health-label">fc1 - Healthy Flow</div>
+            </div>
+            <div class="health-item">
+                <div class="health-score warning">67%</div>
+                <div class="health-label">attention - Needs Attention</div>
+            </div>
+            <div class="health-item">
+                <div class="health-score critical">23%</div>
+                <div class="health-label">encoder - Critical!</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="diagnosis">
+        <h2>Diagnosis Workflow</h2>
+        <p class="section-subtitle">From symptom to solution in four steps</p>
+
+        <div class="diagnosis-flow">
+            <div class="diagnosis-step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <h3>Detect</h3>
+                    <p>Run gradient flow analysis on your model. The analyzer hooks into every layer and measures gradient statistics during backpropagation.</p>
+                </div>
+            </div>
+
+            <div class="diagnosis-step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <h3>Diagnose</h3>
+                    <p>Review the health report to identify problematic layers. Look for low health scores, high pressure readings, or specific issue types like BOTTLENECK or VANISHING.</p>
+                </div>
+            </div>
+
+            <div class="diagnosis-step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <h3>Fix</h3>
+                    <p>Apply targeted fixes based on the diagnosis. Use gradient_scale() for pressure control, add normalization for stability, or restructure bottleneck layers.</p>
+                </div>
+            </div>
+
+            <div class="diagnosis-step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <h3>Verify</h3>
+                    <p>Re-run analysis to confirm the fix. Use ComparativeAnalyzer to track improvement across checkpoints and ensure training progresses smoothly.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="examples">
+        <h2>Learn by Example</h2>
+        <p class="section-subtitle">Progressive tutorials from simple to complex architectures</p>
+
+        <div class="metaphor-grid">
+            <div class="metaphor-card">
+                <h3>01. Simple MLP</h3>
+                <p>Basic feedforward network analysis. Learn the fundamentals of pressure and health scores.</p>
+                <a href="examples/01_simple_mlp.html" class="btn btn-secondary" style="margin-top: 1rem; display: inline-block;">View Tutorial</a>
+            </div>
+
+            <div class="metaphor-card">
+                <h3>02. NLP Embeddings</h3>
+                <p>Analyze text classifiers with embedding layers. Understand sparse gradient patterns.</p>
+                <a href="examples/02_nlp_embedding.html" class="btn btn-secondary" style="margin-top: 1rem; display: inline-block;">View Tutorial</a>
+            </div>
+
+            <div class="metaphor-card">
+                <h3>03. RNN Sequences</h3>
+                <p>Temporal gradient flow in recurrent networks. Diagnose vanishing gradients through time.</p>
+                <a href="examples/03_rnn_sequence.html" class="btn btn-secondary" style="margin-top: 1rem; display: inline-block;">View Tutorial</a>
+            </div>
+
+            <div class="metaphor-card">
+                <h3>04. Memory Agent</h3>
+                <p>Complex RL agent with memory. Fix real-world compression bottlenecks.</p>
+                <a href="examples/04_memory_agent.html" class="btn btn-secondary" style="margin-top: 1rem; display: inline-block;">View Tutorial</a>
+            </div>
+
+            <div class="metaphor-card">
+                <h3>05. Transformer</h3>
+                <p>Full transformer analysis. Query/Key/Value flow and residual health.</p>
+                <a href="examples/05_transformer.html" class="btn btn-secondary" style="margin-top: 1rem; display: inline-block;">View Tutorial</a>
+            </div>
+        </div>
+    </section>
+
+    <section id="solutions">
+        <h2>Common Solutions</h2>
+        <p class="section-subtitle">Proven fixes for common gradient pathologies</p>
+
+        <div class="code-section">
+            <div class="code-header">
+                <span>Gradient Scaling - The Pressure Valve</span>
+            </div>
+            <pre><code><span class="keyword">from</span> gradient_flow <span class="keyword">import</span> gradient_scale
+
+<span class="keyword">class</span> <span class="function">ImprovedLayer</span>(nn.Module):
+    <span class="keyword">def</span> <span class="function">forward</span>(self, x):
+        <span class="comment"># Apply gradient scaling before compression</span>
+        x = gradient_scale(x, <span class="number">0.01</span>)  <span class="comment"># Reduce backward pressure</span>
+
+        <span class="comment"># Now the compression won't explode gradients</span>
+        z = self.compress(x)
+
+        <span class="keyword">return</span> z</code></pre>
+        </div>
+
+        <div class="code-section">
+            <div class="code-header">
+                <span>Bottleneck Architecture - Staged Compression</span>
+            </div>
+            <pre><code><span class="comment"># BAD: Large single-step compression (256 -> 16)</span>
+self.compress = nn.Linear(<span class="number">256</span>, <span class="number">16</span>)  <span class="comment"># 16x gradient amplification!</span>
+
+<span class="comment"># GOOD: Two-stage compression</span>
+self.compress_down = nn.Linear(<span class="number">256</span>, <span class="number">64</span>)  <span class="comment"># 4x</span>
+self.compress_proj = nn.Linear(<span class="number">64</span>, <span class="number">16</span>)   <span class="comment"># 4x</span>
+<span class="comment"># Total amplification split across layers</span></code></pre>
+        </div>
+
+        <div class="code-section">
+            <div class="code-header">
+                <span>Input Normalization - Flow Stabilization</span>
+            </div>
+            <pre><code><span class="comment"># Add normalization before problematic layers</span>
+self.norm = nn.LayerNorm(input_dim)
+
+<span class="keyword">def</span> <span class="function">forward</span>(self, x):
+    x = self.norm(x)  <span class="comment"># Stabilize input magnitude</span>
+    x = self.problematic_layer(x)
+    <span class="keyword">return</span> x</code></pre>
+        </div>
+    </section>
+
+    <footer>
+        <p>Gradient Hydrodynamics Toolkit - Making Neural Network Debugging Intuitive</p>
+        <p style="margin-top: 1rem;">Built with PyTorch | MIT License</p>
+    </footer>
+</body>
+</html>
