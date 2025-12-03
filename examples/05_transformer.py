@@ -1,21 +1,19 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
-Example 5: Transformer Analysis
-===============================
+    Example 5: Transformer Analysis
+    ===============================
 
-Analyzing gradient flow in Transformer architectures.
-Transformers have unique gradient patterns due to:
-- Multi-head attention mechanisms
-- Residual connections at every layer
-- Layer normalization placement
-- Feed-forward network bottlenecks
+    Analyzing gradient flow in Transformer architectures.
+    Transformers have unique gradient patterns due to:
+    - Multi-head attention mechanisms
+    - Residual connections at every layer
+    - Layer normalization placement
+    - Feed-forward network bottlenecks
 
-Key concepts introduced:
-- AttentionAnalyzer for transformer architectures
-- Query/Key/Value gradient patterns
-- Residual connection health
-- Layer-wise gradient distribution
+    Key concepts introduced:
+    - AttentionAnalyzer for transformer architectures
+    - Query/Key/Value gradient patterns
+    - Residual connection health
+    - Layer-wise gradient distribution
 """
 
 import torch
@@ -24,12 +22,9 @@ import torch.nn.functional as F
 import math
 
 import sys
-sys.path.insert(0, '..')
-from gradient_flow import (
-    FlowAnalyzer,
-    AttentionAnalyzer,
-    ComparativeAnalyzer,
-)
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+from gradient_flow import GradientFlowAnalyzer
 
 
 # =============================================================================
@@ -260,182 +255,67 @@ def main():
     loss_fn = nn.CrossEntropyLoss()
 
     # =============================================================================
-    # Basic Analysis
+    # Basic Gradient Flow Analysis
     # =============================================================================
 
     print("\n" + "-" * 60)
     print("Step 1: Basic Gradient Flow Analysis")
     print("-" * 60)
 
-    analyzer = FlowAnalyzer(model, "Transformer-6L")
-    report = analyzer.analyze(
-        sample_input=tokens,
-        sample_target=labels,
-        loss_fn=loss_fn,
-        num_samples=3,
+    # Create analyzer with scientifically validated defaults
+    #
+    # Configuration rationale for Transformers:
+    # - enable_jacobian=False: Not needed for standard gradient pathology detection
+    # - enable_vector_analysis=False: Validation shows no detection benefit
+    #
+    # This configuration provides 80% detection at minimal cost (26x faster than full analysis)
+    # See: gradient_flow/validation/VALIDATION_RESULTS.md
+    #
+    # ADVANCED: For attention-specific analysis (entropy, head diversity, rank collapse):
+    # Use TransformerAnalyzer instead:
+    #   from gradient_flow import TransformerAnalyzer
+    #   analyzer = TransformerAnalyzer(model, min_entropy_threshold=0.5, min_diversity_threshold=0.3)
+    #   issues, attn_stats = analyzer.analyze(input_fn, loss_fn, steps=20)
+    #   print(f"Attention entropy: {attn_stats.attention_entropy_mean:.3f}")
+    #   print(f"Head diversity: {attn_stats.head_diversity:.3f}")
+    #
+    # TransformerAnalyzer adds:
+    # - Attention pattern analysis (entropy, sparsity)
+    # - Head diversity metrics
+    # - Rank collapse detection
+    # - All on top of base gradient flow analysis
+    analyzer = GradientFlowAnalyzer(
+        model,
+        enable_rnn_analyzer=False,      # Not needed for standard transformer analysis
+        enable_circular_flow_analyser=False # Not beneficial for standard pathologies
     )
 
-    report.print_summary()
-    report.print_issues()
-    analyzer.cleanup()
+    # Parameters
+    batch_size = 16
+    seq_len = 64
+    vocab_size = 10000
+    num_classes = 10
 
-    # =============================================================================
-    # Attention-Specific Analysis
-    # =============================================================================
+    def input_fn():
+        return torch.randint(1, vocab_size, (batch_size, seq_len))
 
-    print("\n" + "-" * 60)
-    print("Step 2: Attention-Specific Analysis")
-    print("-" * 60)
+    def loss_fn_wrapper(output):
+        targets = torch.randint(0, num_classes, (batch_size,))
+        return loss_fn(output, targets)
 
-    attn_analyzer = AttentionAnalyzer(
-        num_heads=8,
-        track_heads=True,
-        residual_analysis=True,
+    print("\nAnalyzing gradient propagation...\n")
+    issues = analyzer.analyze(
+        input_fn=input_fn,
+        loss_fn=loss_fn_wrapper,
+        steps=5
     )
 
-    report = attn_analyzer.analyze(
-        model=model,
-        sample_input=tokens,
-        sample_target=labels,
-        loss_fn=loss_fn,
-        model_name="Transformer-6L",
-    )
+    analyzer.print_summary(issues)
 
-    # Get transformer metrics
-    tf_metrics = attn_analyzer.get_transformer_metrics()
-
-    if tf_metrics:
-        print(f"\nTransformer Overview:")
-        print(f"  Num layers: {tf_metrics.num_layers}")
-        print(f"  Residual decay: {tf_metrics.residual_decay:.3f}")
-        print(f"  Avg attention pressure: {tf_metrics.attention_avg_pressure:.2e}")
-
-        print(f"\n{'Layer':<10} {'Q Pressure':>12} {'K Pressure':>12} {'V Pressure':>12} {'Output':>12}")
-        print("-" * 60)
-
-        for lm in tf_metrics.layer_metrics:
-            print(f"{lm.layer_index:<10} {lm.query_pressure:>12.2e} {lm.key_pressure:>12.2e} {lm.value_pressure:>12.2e} {lm.output_pressure:>12.2e}")
-
-    # Attention profile
-    profile = attn_analyzer.get_attention_profile()
-    if profile:
-        print(f"\nAttention Gradient Profile:")
-        print(f"{'Layer':>6} {'Query':>12} {'Key':>12} {'Value':>12}")
-        print("-" * 45)
-        for layer_idx, q, k, v in profile:
-            bar_q = "#" * min(int(q * 100), 20)
-            print(f"{layer_idx:>6} {q:>12.2e} {k:>12.2e} {v:>12.2e}  {bar_q}")
-
-    attn_analyzer.cleanup()
-
-    # =============================================================================
-    # Compare Pre-Norm vs Post-Norm
-    # =============================================================================
-
-    print("\n" + "-" * 60)
-    print("Step 3: Pre-Norm vs Post-Norm Comparison")
-    print("-" * 60)
-
-    # Create both variants
-    model_prenorm = Transformer(num_layers=6, pre_norm=True)
-    model_postnorm = Transformer(num_layers=6, pre_norm=False)
-
-    comparator = ComparativeAnalyzer()
-
-    print("\nAnalyzing Pre-Norm transformer...")
-    comparator.analyze_model(model_prenorm, tokens, labels, loss_fn, "PreNorm")
-
-    print("Analyzing Post-Norm transformer...")
-    comparator.analyze_model(model_postnorm, tokens, labels, loss_fn, "PostNorm")
-
-    comparison = comparator.compare("PreNorm", "PostNorm")
-    print(f"\nComparison Summary:")
-    print(f"  Average health change: {comparison.avg_health_change:+.1f}")
-    print(f"  Average pressure change: {comparison.avg_pressure_change:+.1%}")
-    print(f"  Improved layers: {len(comparison.improved_layers)}")
-    print(f"  Degraded layers: {len(comparison.degraded_layers)}")
-
-    # Focus on norm layers
-    print(f"\nNormalization Layer Comparison:")
-    print(f"{'Layer':<40} {'PreNorm':>12} {'PostNorm':>12} {'Change':>12}")
-    print("-" * 80)
-
-    for c in comparison.layer_comparisons:
-        if 'norm' in c.layer_name.lower():
-            change = c.pressure_b / max(c.pressure_a, 1e-10)
-            print(f"{c.layer_name:<40} {c.pressure_a:>12.2e} {c.pressure_b:>12.2e} {change:>12.2f}x")
-
-    # =============================================================================
-    # Key Insights
-    # =============================================================================
-
-    print("\n" + "=" * 60)
-    print("Transformer Gradient Flow Insights")
-    print("=" * 60)
-
-    print("""
-    ATTENTION MECHANISM GRADIENTS:
-
-    1. Query/Key/Value Flow:
-       - Q and K: Gradient magnitude depends on sequence length
-       - V: Usually has the most stable gradients
-       - Imbalanced Q/K/V can indicate attention head issues
-
-    2. Softmax Saturation:
-       - Very peaked attention -> near-zero gradients for non-attended tokens
-       - Can lead to "dead" attention patterns
-       - Temperature scaling or dropout can help
-
-    3. Multi-Head Balance:
-       - Heads should have similar gradient magnitudes
-       - Imbalanced heads suggest some aren't learning
-       - Consider head pruning or reinitialization
-
-    RESIDUAL CONNECTIONS:
-
-    1. Gradient Highway:
-       - Residual connections allow gradients to skip layers
-       - Critical for training deep transformers
-       - Decay ratio should be close to 1.0
-
-    2. Pre-Norm vs Post-Norm:
-       - Pre-Norm: More stable gradients, easier to train
-       - Post-Norm: Original design, can have gradient issues
-       - Pre-Norm generally recommended for deep models
-
-    FFN BOTTLENECKS:
-
-    1. Expansion/Contraction:
-       - FFN expands then contracts: d_model -> d_ff -> d_model
-       - Can create gradient bottleneck at contraction
-       - Monitor fc2 (down-projection) gradients
-
-    2. Activation Function:
-       - GELU preferred over ReLU for transformers
-       - ReLU can cause dead neurons in FFN
-       - Check for high sparsity in FFN gradients
-
-    LAYER-WISE PATTERNS:
-
-    1. Early Layers:
-       - Often have smaller gradients
-       - May benefit from higher learning rate
-
-    2. Late Layers:
-       - Usually have larger gradients
-       - More task-specific
-
-    3. Variance:
-       - High variance across layers = unstable training
-       - Consider layer-wise learning rates or gradient scaling
-    """)
-
-    # Export
-    report.save_html("transformer_analysis.html")
-    print("\nSaved report to: transformer_analysis.html")
-
-    print("\nDone!")
-
+    if issues:
+        print("\nTop Issues:")
+        for issue in issues[:5]:
+            print(f"\n{issue}")
 
 if __name__ == "__main__":
     main()

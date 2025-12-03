@@ -84,7 +84,7 @@ class ConsoleReporter:
         lines = []
 
         # Title
-        lines.append(self._header(f"GRADIENT FLOW ANALYSIS - {report.model_name}"))
+        lines.append(self._header(f"GRADIENT ANALYSIS - {report.model_name}"))
 
         # Summary
         s = report.summary
@@ -104,21 +104,21 @@ class ConsoleReporter:
         lines.append(self._subheader("Layers Requiring Attention (sorted by health)"))
         worst = report.get_worst_layers(15)
 
-        header = f"{'Layer':<45} {'Type':<18} {'Pressure':<12} {'Health':<10}"
+        header = f"{'Layer':<45} {'Type':<18} {'Magnitude':<12} {'Health':<10}"
         lines.append(header)
         lines.append("-" * len(header))
 
         for h in worst:
             m = report.metrics.get(h.name)
             if m:
-                pressure = f"{m.mean_pressure:.2e}"
+                magnitude = f"{m.mean_pressure:.2e}"
                 color = self._health_color(h.score)
                 name_padded = f"{h.name[:45]:<45}"
                 score_str = f"{h.score:.1f}%"
                 lines.append(
                     f"{self._c(color, name_padded)} "
                     f"{h.layer_type:<18} "
-                    f"{pressure:<12} "
+                    f"{magnitude:<12} "
                     f"{self._c(color, score_str)}"
                 )
 
@@ -160,7 +160,7 @@ class ConsoleReporter:
 
     def print_summary(self, report) -> None:
         """Print summary section."""
-        print(self._header(f"GRADIENT FLOW ANALYSIS - {report.model_name}"))
+        print(self._header(f"GRADIENT ANALYSIS - {report.model_name}"))
 
         s = report.summary
         status_color = Colors.GREEN if s["status"] == "HEALTHY" else (
@@ -205,7 +205,7 @@ class ConsoleReporter:
     def print_issues(self, report) -> None:
         """Print detected issues."""
         if not report.issues:
-            print(self._c(Colors.GREEN, "\nNo issues detected! Gradient flow looks healthy."))
+            print(self._c(Colors.GREEN, "\nNo issues detected! Gradient propagation looks healthy."))
             return
 
         print(self._subheader(f"Issues Detected ({len(report.issues)} total)"))

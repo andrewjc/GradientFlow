@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Flow Metrics and Health Assessment
-===================================
+Gradient Metrics and Health Assessment
+=======================================
 
 This module defines the core data structures for tracking and assessing
-gradient flow through neural networks.
+gradient propagation through neural networks.
 
 Key Concepts:
     - FlowMetrics: Raw statistics collected during analysis
     - LayerHealth: Computed health scores and diagnostics
-    - Pressure: Gradient magnitude (L2 norm)
-    - Turbulence: Gradient variance over time
-    - Velocity: Rate of change in gradient patterns
+    - Magnitude: Gradient magnitude (L2 norm)
+    - Variance: Gradient variance over time
+    - Change Rate: Rate of change in gradient patterns
 """
 
 import numpy as np
@@ -76,16 +76,16 @@ class FlowMetrics:
     inf_count: int = 0
 
     # =========================================================================
-    # Computed Properties - The "Fluid Dynamics" Metrics
+    # Computed Properties - Gradient Statistics
     # =========================================================================
 
     @property
     def mean_pressure(self) -> float:
         """
-        Mean gradient pressure (average L2 norm).
+        Mean gradient magnitude (average L2 norm).
 
-        In fluid dynamics terms: average pressure in the pipe.
         Low values indicate potential vanishing gradients.
+        High values indicate strong gradient signals.
         """
         valid = [g for g in self.grad_norms if np.isfinite(g)]
         return float(np.mean(valid)) if valid else 0.0
@@ -93,9 +93,8 @@ class FlowMetrics:
     @property
     def max_pressure(self) -> float:
         """
-        Maximum gradient pressure (peak L2 norm).
+        Maximum gradient magnitude (peak L2 norm).
 
-        In fluid dynamics terms: peak pressure that could burst the pipe.
         Very high values indicate exploding gradients.
         """
         valid = [g for g in self.grad_norms if np.isfinite(g)]
@@ -103,17 +102,17 @@ class FlowMetrics:
 
     @property
     def min_pressure(self) -> float:
-        """Minimum gradient pressure."""
+        """Minimum gradient magnitude across all steps."""
         valid = [g for g in self.grad_norms if np.isfinite(g)]
         return float(np.min(valid)) if valid else 0.0
 
     @property
     def turbulence(self) -> float:
         """
-        Gradient turbulence (standard deviation of norms).
+        Gradient temporal variance (standard deviation of magnitudes over time).
 
-        In fluid dynamics terms: how chaotic/unstable the flow is.
-        High turbulence relative to mean pressure indicates training instability.
+        High variance relative to mean magnitude indicates training instability
+        and inconsistent gradient signals across iterations.
         """
         valid = [g for g in self.grad_norms if np.isfinite(g)]
         return float(np.std(valid)) if valid else 0.0
@@ -121,10 +120,10 @@ class FlowMetrics:
     @property
     def flow_velocity(self) -> float:
         """
-        Gradient flow velocity (mean absolute change between steps).
+        Gradient temporal change rate (mean absolute change between steps).
 
-        In fluid dynamics terms: how quickly the flow pattern changes.
-        Very high velocity can indicate oscillating gradients.
+        Measures how quickly gradient patterns evolve during training.
+        Very high values can indicate oscillating or unstable gradients.
         """
         valid = [g for g in self.grad_norms if np.isfinite(g)]
         if len(valid) < 2:
@@ -134,19 +133,24 @@ class FlowMetrics:
 
     @property
     def pressure_range(self) -> float:
-        """Range between max and min pressure."""
+        """Range between maximum and minimum gradient magnitudes."""
         return self.max_pressure - self.min_pressure
 
     @property
     def coefficient_of_variation(self) -> float:
-        """Turbulence normalized by mean pressure."""
+        """Temporal variance normalized by mean magnitude (CV = std/mean)."""
         if self.mean_pressure > 0:
             return self.turbulence / self.mean_pressure
         return 0.0
 
     @property
     def signal_to_noise(self) -> float:
-        """Ratio of mean to turbulence (inverse of CV)."""
+        """
+        Signal-to-noise ratio: mean magnitude divided by variance.
+
+        High values indicate stable, consistent gradients.
+        Low values indicate noisy, unstable gradients.
+        """
         if self.turbulence > 0:
             return self.mean_pressure / self.turbulence
         return float('inf') if self.mean_pressure > 0 else 0.0

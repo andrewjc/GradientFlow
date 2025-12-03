@@ -1,24 +1,5 @@
-# -*- coding: utf-8 -*-
 """
-Core Gradient Flow Analysis Engine
-===================================
-
-The heart of the Gradient Hydrodynamics toolkit. This module provides:
-
-1. GradientScale: Custom autograd function for controlling gradient magnitude
-2. FlowAnalyzer: Main analysis engine that tracks gradient flow through networks
-3. Simulation runners for various network architectures
-
-The key insight is treating neural network gradient flow as a fluid dynamics problem:
-- Gradients are "pressure" flowing backward through the network
-- Each layer is a "pipe segment" that can amplify, dampen, or block flow
-- Training pathologies manifest as fluid dynamics problems
-
-This metaphor enables intuitive diagnosis:
-- Vanishing gradients = clogged pipes (no pressure reaches early layers)
-- Exploding gradients = burst pipes (pressure too high, system unstable)
-- Dead neurons = disconnected pipes (no flow at all)
-- Unstable training = turbulent flow (pressure varies wildly)
+    Core Gradient Flow Analysis Engine
 """
 
 import torch
@@ -340,9 +321,6 @@ class FlowAnalyzer:
                 # Backward pass
                 loss.backward()
 
-                # Optional weight update
-                optimizer.step()
-
                 # Track weight norms if configured
                 if self.config.track_weights:
                     self._capture_weight_norms()
@@ -394,7 +372,6 @@ class FlowAnalyzer:
 
                 # Backward
                 loss.backward()
-                optimizer.step()
 
                 if self.config.track_weights:
                     self._capture_weight_norms()

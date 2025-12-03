@@ -1,25 +1,39 @@
 # -*- coding: utf-8 -*-
 """
-Gradient Hydrodynamics Toolkit
-==============================
+Gradient Analysis Toolkit
+==========================
 
-A revolutionary approach to neural network debugging through fluid dynamics metaphors.
+Advanced gradient propagation analysis for neural network debugging and optimization.
 
-This toolkit treats gradient flow through neural networks as fluid flow through pipes,
-enabling intuitive diagnosis of training pathologies:
+This toolkit provides comprehensive gradient analysis through neural networks,
+enabling precise diagnosis of training pathologies:
 
-- **Pressure** (gradient magnitude): How much "force" is flowing through each layer
-- **Turbulence** (gradient variance): Flow stability over time
-- **Velocity** (gradient change rate): How quickly flow patterns change
-- **Blockages** (vanishing gradients): Clogged pipes stopping flow
-- **Bursts** (exploding gradients): Over-pressurized pipes about to fail
+- **Magnitude** (gradient L2 norm): Strength of gradient signals at each layer
+- **Temporal Variance**: Gradient stability and consistency over time
+- **Change Rate**: How quickly gradient patterns evolve during training
+- **Divergence/Curl**: Vector field properties showing expansion, contraction, and rotation
+- **Vanishing Gradients**: Weak or zero gradients blocking learning
+- **Exploding Gradients**: Excessive gradient magnitudes causing instability
 
 Quick Start:
-    >>> from gradient_flow import FlowAnalyzer
-    >>> analyzer = FlowAnalyzer(model)
-    >>> report = analyzer.analyze(sample_input, steps=20)
-    >>> report.print_summary()
-    >>> report.save_html("flow_report.html")
+    >>> from gradient_flow import GradientFlowAnalyzer
+    >>>
+    >>> analyzer = GradientFlowAnalyzer(model)
+    >>> issues = analyzer.analyze(input_fn, loss_fn, steps=20)
+    >>>
+    >>> analyzer.print_summary(issues)
+    >>> for issue in issues:
+    >>>     print(issue)
+
+The GradientFlowAnalyzer automatically runs fused analysis combining:
+- Scalar gradient statistics (magnitude, variance, temporal stability)
+- Vector field analysis (divergence, curl, flow coherence)
+- Optional Jacobian spectral analysis
+
+Each detected issue includes:
+- Severity level (CRITICAL, HIGH, MEDIUM, LOW, INFO)
+- Issue type (VANISHING, EXPLODING, DEAD, UNSTABLE, NUMERICAL, BOTTLENECK)
+- Clear description and recommended fixes
 
 For detailed documentation, visit: https://gradient-flow.dev
 """
@@ -29,12 +43,25 @@ __author__ = "Gradient Flow Team"
 
 from .core.engine import FlowAnalyzer, GradientScale, gradient_scale, AnalysisConfig
 from .core.metrics import FlowMetrics, LayerHealth
-from .core.hooks import HookManager, BackwardHook, ForwardHook
+from .core.hooks import HookManager, BackwardHook, ForwardHook, VectorBackwardHook, AdaptiveSampler
+from .core.fluid_dynamics import (
+    GradientField,
+    VectorMetrics,
+    FluidOperators,
+    StreamlineTracer,
+    PressureVelocityCoupling
+)
 from .analyzers import (
+    GradientFlowAnalyzer,
+    GradientIssue,
+    IssueSeverity,
+    IssueType,
     RecurrentAnalyzer,
+    ReservoirDynamics,
     RLPolicyAnalyzer,
+    PolicyDistributionStats,
     TransformerAnalyzer,
-    TreeGPTAnalyzer
+    AttentionStats,
 )
 
 __all__ = [
@@ -48,9 +75,23 @@ __all__ = [
     "HookManager",
     "BackwardHook",
     "ForwardHook",
+    # Fluid dynamics
+    "VectorBackwardHook",
+    "AdaptiveSampler",
+    "GradientField",
+    "VectorMetrics",
+    "FluidOperators",
+    "StreamlineTracer",
+    "PressureVelocityCoupling",
     # Analyzers
+    "GradientFlowAnalyzer",
+    "GradientIssue",
+    "IssueSeverity",
+    "IssueType",
     "RecurrentAnalyzer",
+    "ReservoirDynamics",
     "RLPolicyAnalyzer",
+    "PolicyDistributionStats",
     "TransformerAnalyzer",
-    "TreeGPTAnalyzer",
+    "AttentionStats",
 ]

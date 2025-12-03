@@ -1,18 +1,16 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
-Example 3: RNN Sequence Analysis
-================================
+    Example 3: RNN Sequence Analysis
+    ================================
 
-Analyzing gradient flow in recurrent neural networks.
-RNNs are particularly susceptible to vanishing/exploding gradients
-due to gradient flow through time.
+    Analyzing gradient flow in recurrent neural networks.
+    RNNs are particularly susceptible to vanishing/exploding gradients
+    due to gradient flow through time.
 
-Key concepts introduced:
-- TemporalAnalyzer for recurrent architectures
-- Temporal decay analysis
-- Effective memory length
-- Gate-level analysis (LSTM/GRU)
+    Key concepts introduced:
+    - TemporalAnalyzer for recurrent architectures
+    - Temporal decay analysis
+    - Effective memory length
+    - Gate-level analysis (LSTM/GRU)
 """
 
 import torch
@@ -20,8 +18,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 import sys
-sys.path.insert(0, '..')
-from gradient_flow import FlowAnalyzer, TemporalAnalyzer
+import os
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
+from gradient_flow import GradientFlowAnalyzer
 
 
 # =============================================================================
@@ -156,8 +155,8 @@ def create_sequence_data(
 def analyze_rnn(
     model: nn.Module,
     name: str,
-    inputs: torch.Tensor,
-    targets: torch.Tensor,
+    seq_len: int,
+    input_dim: int,
     loss_fn: nn.Module,
 ):
     """Analyze a single RNN model."""
@@ -165,54 +164,61 @@ def analyze_rnn(
     print(f"Analyzing: {name}")
     print(f"{'='*60}")
 
-    # Use TemporalAnalyzer for RNN-specific analysis
-    analyzer = TemporalAnalyzer(
-        sequence_length=inputs.shape[1],
-        track_gates=True,
-        memory_threshold=0.01,
+    # Create analyzer optimized for RNN analysis
+    #
+    # Configuration rationale for RNNs:
+    # - enable_jacobian=True: NEEDED for spectral radius analysis (gradient flow through time)
+    # - enable_vector_analysis=False: Not needed - temporal patterns don't benefit from curl/divergence
+    #
+    # For RNNs, Jacobian analysis IS valuable for detecting:
+    # - Exploding/vanishing through time (eigenvalue magnitude)
+    # - Effective memory length (spectral radius)
+    # - Temporal gradient decay patterns
+    #
+    # Use RecurrentAnalyzer for RNN-specific features (spectral radius, temporal dynamics)
+    analyzer = GradientFlowAnalyzer(
+        model,
+        enable_rnn_analyzer=True,        # ESSENTIAL for RNN gradient flow analysis
+        enable_circular_flow_analyser=False # Not beneficial for temporal sequences
     )
 
-    report = analyzer.analyze(
-        model=model,
-        sample_input=inputs,
-        sample_target=targets,
-        loss_fn=loss_fn,
-        model_name=name,
-        num_samples=3,
+    # Define input and loss functions
+    def input_fn():
+        return torch.randn(32, seq_len, input_dim)
+
+    def loss_fn_wrapper(output):
+        targets = torch.randint(0, 10, (32,))
+        return loss_fn(output, targets)
+
+    # Run analysis
+    print(f"\nAnalyzing gradient propagation (seq_len={seq_len})...\n")
+    issues = analyzer.analyze(
+        input_fn=input_fn,
+        loss_fn=loss_fn_wrapper,
+        steps=5
     )
 
     # Print summary
-    report.print_summary()
-    report.print_issues()
+    analyzer.print_summary(issues)
 
-    # Temporal-specific metrics
-    temporal_metrics = analyzer.get_temporal_metrics()
-
-    if temporal_metrics:
-        print(f"\n{'Temporal Analysis':^60}")
+    # Print detailed issues
+    if issues:
+        print("\n" + "-" * 60)
+        print("DETAILED ISSUES")
         print("-" * 60)
-        print(f"{'Layer':<30} {'Decay Rate':>15} {'Eff. Memory':>12}")
+        for issue in issues[:3]:  # Show first 3
+            print(f"\n{issue}")
+
+    # Get healthy layers
+    healthy = analyzer.get_healthy_layers(issues)
+    if healthy:
+        print("\n" + "-" * 60)
+        print(f"HEALTHY LAYERS ({len(healthy)} total)")
         print("-" * 60)
+        for layer in healthy[:5]:
+            print(f"  - {layer}")
 
-        for tm in temporal_metrics:
-            decay_str = f"{tm.temporal_decay_rate:+.3f}"
-            if tm.has_vanishing:
-                decay_str += " (VANISHING)"
-            elif tm.has_exploding:
-                decay_str += " (EXPLODING)"
-
-            print(f"{tm.layer_name:<30} {decay_str:>15} {tm.effective_memory:>12}")
-
-    # Effective memory
-    memory_info = analyzer.get_effective_memory()
-    if memory_info:
-        print(f"\nEffective Memory (timesteps with meaningful gradients):")
-        for layer, memory in memory_info.items():
-            bar = "#" * min(memory, 50)
-            print(f"  {layer}: {memory} steps {bar}")
-
-    analyzer.cleanup()
-    return report
+    return issues
 
 
 def main():
@@ -220,13 +226,13 @@ def main():
     print("Example 3: RNN Gradient Flow Analysis")
     print("=" * 60)
 
-    # Create sample data
+    # Parameters
     seq_len = 100
-    inputs, targets = create_sequence_data(seq_len=seq_len)
+    input_dim = 32
     loss_fn = nn.CrossEntropyLoss()
 
     print(f"\nSequence length: {seq_len} timesteps")
-    print(f"Input dim: 32")
+    print(f"Input dim: {input_dim}")
     print(f"Hidden dim: 128")
     print(f"Num layers: 2")
 
@@ -234,66 +240,22 @@ def main():
     # Analyze Vanilla RNN
     # =============================================================================
 
-    rnn = VanillaRNN()
-    analyze_rnn(rnn, "VanillaRNN", inputs, targets, loss_fn)
+    rnn = VanillaRNN(input_dim=input_dim)
+    analyze_rnn(rnn, "VanillaRNN", seq_len, input_dim, loss_fn)
 
     # =============================================================================
     # Analyze LSTM
     # =============================================================================
 
-    lstm = LSTMClassifier()
-    analyze_rnn(lstm, "LSTM", inputs, targets, loss_fn)
+    lstm = LSTMClassifier(input_dim=input_dim)
+    analyze_rnn(lstm, "LSTM", seq_len, input_dim, loss_fn)
 
     # =============================================================================
     # Analyze GRU
     # =============================================================================
 
-    gru = GRUClassifier()
-    analyze_rnn(gru, "GRU", inputs, targets, loss_fn)
-
-    # =============================================================================
-    # Insights
-    # =============================================================================
-
-    print("\n" + "=" * 60)
-    print("RNN Gradient Flow Insights")
-    print("=" * 60)
-
-    print("""
-    TEMPORAL GRADIENT PATTERNS:
-
-    1. Vanilla RNN:
-       - Gradients often decay exponentially through time
-       - "Temporal decay rate" < -0.3 indicates vanishing gradients
-       - Effective memory is typically short (5-20 timesteps)
-       - Use gradient clipping to prevent explosion
-
-    2. LSTM:
-       - Cell state provides a "gradient highway"
-       - Forget gate bias helps maintain long-term memory
-       - Much better gradient flow for long sequences
-       - Initialize forget gate bias to 1.0 for better memory
-
-    3. GRU:
-       - Simpler than LSTM, often similar performance
-       - Update gate controls gradient flow
-       - Can still struggle with very long sequences
-
-    DIAGNOSING ISSUES:
-
-    - Low effective memory: Model can't learn long-range dependencies
-    - High temporal decay: Gradients vanish before reaching early timesteps
-    - Temporal growth: Exploding gradients (rare with gated RNNs)
-
-    SOLUTIONS:
-
-    - For vanishing: Use LSTM/GRU, reduce sequence length, use attention
-    - For exploding: Gradient clipping, reduce learning rate
-    - For short memory: Add attention mechanism, use Transformer
-    """)
-
-    print("\nDone!")
-
+    gru = GRUClassifier(input_dim=input_dim)
+    analyze_rnn(gru, "GRU", seq_len, input_dim, loss_fn)
 
 if __name__ == "__main__":
     main()
