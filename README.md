@@ -38,7 +38,7 @@ pip install gradient-flow
 Or install from source:
 
 ```bash
-git clone https://github.com/your-org/gradient-flow.git
+git clone https://github.com/andrewjc/GradientFlow.git
 cd gradient-flow
 pip install -e .
 ```
@@ -1022,7 +1022,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 ### Development Setup
 
 ```bash
-git clone https://github.com/your-org/gradient-flow.git
+git clone https://github.com/andrewjc/GradientFlow.git
 cd gradient-flow
 pip install -e ".[dev]"
 pytest tests/
@@ -1035,9 +1035,9 @@ If you use GradientFlow in your research, please cite:
 ```bibtex
 @software{gradientflow2025,
   title={GradientFlow: Advanced Gradient Analysis for PyTorch},
-  author={Gradient Flow Team},
+  author={Andrew J Cranston},
   year={2025},
-  url={https://github.com/your-org/gradient-flow}
+  url={https://github.com/andrewjc/GradientFlow.git}
 }
 ```
 
@@ -1048,8 +1048,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Support
 
 - **Documentation**: [docs/README.md](docs/README.md)
-- **Issues**: [GitHub Issues](https://github.com/your-org/gradient-flow/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/your-org/gradient-flow/discussions)
+- **Issues**: [GitHub Issues](https://github.com/andrewjc/GradientFlow.git/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/andrewjc/GradientFlow.git/discussions)
 
 ---
 
